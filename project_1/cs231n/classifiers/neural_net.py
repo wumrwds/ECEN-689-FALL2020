@@ -80,7 +80,11 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # compute the output of hiden layer based on h = RELU(w*x + b)
+        h_output = np.maximum(0, X.dot(W1) + b1)
+
+        # compute the scores
+        scores = h_output.dot(W2) + b2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -98,7 +102,10 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # the same as the snippet of softmax
+        shift_scores = scores - np.max(scores, axis = 1).reshape(-1,1)
+        softmax_probs = np.exp(shift_scores) / np.sum(np.exp(shift_scores), axis = 1).reshape(-1,1)
+        loss = -(np.sum(np.log(softmax_probs[range(N), list(y)])) / N) + 0.5 * reg * (np.sum(W1 * W1) + np.sum(W2 * W2))
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -111,7 +118,33 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        dscores = softmax_probs
+        dscores[range(N), y] -= 1
+        dscores /= N
+
+        # Backprop into W2 and b2
+        dW2 = np.dot(h_output.T, dscores)
+        db2 = np.sum(dscores, axis=0, keepdims=True)
+
+        # Backprop into hidden layer
+        dh_output = np.dot(dscores, W2.T)
+
+        # Backprop into ReLU non-linearity
+        dh_output[h_output <= 0] = 0
+
+        # Backprop into W1 and b1
+        dW1 = np.dot(X.T, dh_output)
+        db1 = np.sum(dh_output, axis=0, keepdims=True)
+
+        # Add the regularization gradient contribution
+        dW2 += reg * W2
+        dW1 += reg * W1
+        
+        # set grad dict
+        grads['W1'] = dW1
+        grads['b1'] = db1
+        grads['W2'] = dW2
+        grads['b2'] = db2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -156,7 +189,9 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            sample_index = np.random.choice(num_train, batch_size, replace=True)
+            X_batch = X[sample_index, :]
+            y_batch = y[sample_index]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -172,7 +207,10 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            self.params['W2'] += - learning_rate * grads['W2']
+            self.params['b2'] += - learning_rate * grads['b2'].reshape(-1)
+            self.params['W1'] += - learning_rate * grads['W1']
+            self.params['b1'] += - learning_rate * grads['b1'].reshape(-1)
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -218,7 +256,9 @@ class TwoLayerNet(object):
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        h_output = np.maximum(0,(np.dot(X, self.params['W1']) + self.params['b1']))
+        scores = np.dot(h_output, self.params['W2']) + self.params['b2']
+        y_pred = np.argmax(scores, axis=1)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
